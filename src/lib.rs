@@ -1,11 +1,9 @@
 use pyo3::prelude::*;
 use rand::{Rng, SeedableRng};
 use rand::rngs::StdRng;
-use fancy_regex::*;
-use blake2::{Blake2b, Digest};
 use rand::prelude::SliceRandom;
 use std::borrow::BorrowMut;
-use std::collections::{HashMap, HashSet};
+use xxhash_rust::xxh3::xxh3_64;
 #[macro_use]
 extern crate lazy_static;
 
@@ -28,11 +26,8 @@ lazy_static! {
 }
 
 #[pyfunction]
-fn uwuify(text: &str) -> PyResult<String> {   
-    let mut hasher = Blake2b::new();
-    hasher.update(text);
-    let seed = hasher.finalize();
-    let mut rng = StdRng::from_seed(seed.into());
+fn uwuify(text: &str) -> PyResult<String> {
+    let mut rng : StdRng = StdRng::seed_from_u64(xxh3_64(text.as_bytes()));
     
     let mut text = text.to_owned();
     
@@ -51,12 +46,10 @@ fn uwuify(text: &str) -> PyResult<String> {
         }
         else if c == '?' {
             if rng.gen_bool(0.5) {
-                text.push('!');
-                text.push('?');
+                text.push_str("?!");
             }
             else {
-                text.push('?');
-                text.push('!');
+                text.push_str("!?");
             }
         }
         else if c == ',' {
@@ -81,18 +74,18 @@ fn uwuify(text: &str) -> PyResult<String> {
     let mut period = 0;
     let mut tracing_period = false;
     let mut offset = 0;
-    for (i, c) in text.clone().char_indices() {
-        if !tracing_period && c == '.' {
+    for (i, c) in text.clone().as_bytes().iter().enumerate() {
+        if !tracing_period && *c as char == '.' {
             period = i;
             tracing_period = true;
         }
-        if tracing_period && c == ' ' {
+        else if tracing_period && *c as char == ' ' {
             let emoji : &str = UWUIFY_EMOJIS.choose(&mut rng).unwrap();
             text.insert_str(period + offset, format!(" {}", emoji).borrow_mut());
-            offset += emoji.char_indices().count() + 1;
+            offset += emoji.as_bytes().len() + 1;
             tracing_period = false;
         }
-        else if tracing_period && c != ' ' {
+        else if tracing_period && *c as char != ' ' {
             tracing_period = false;
         }
     }
