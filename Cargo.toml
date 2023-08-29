@@ -1,0 +1,17 @@
+[package]
+name = "uwuifier"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+pyo3 = "0.19.0"
+fancy-regex = "*"
+rand = "*"
+lazy_static = "*"
+blake2 = "*"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true 
+incremental = true
